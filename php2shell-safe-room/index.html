@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f0e6">
+  <meta name="description" content="A VM-runnable, safe PHP2Shell training room. Investigate simulated evidence and practice defensive response without a vulnerable PHP runtime or exploit.">
+  <title>PHP2Shell — Safe Training Room</title>
+  <link rel="stylesheet" href="./lab.css">
+  <script src="./scenario.js" defer></script>
+  <script src="./lab.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="PHP2Shell training room home"><span class="brand-mark" aria-hidden="true">P·2</span><span>PHP2SHELL <b>ROOM</b></span></a>
+    <div class="top-meta"><span class="status-dot"></span> LOCAL TRAINING SIMULATION</div>
+  </header>
+
+  <main id="main" class="page-shell">
+    <aside class="margin-note" aria-label="Room identifier"><span class="margin-number">01</span><span class="margin-rule"></span><span class="margin-label">RUNTIME<br>RESPONSE</span><span class="margin-stamp">LAB·01</span></aside>
+    <div class="workspace">
+      <div class="eyebrow"><span class="eyebrow-line"></span> DEFENSIVE TRAINING ROOM <span>— PHP2SHELL</span></div>
+      <h1>When request state<br>outlives <em>the request.</em></h1>
+      <p class="intro">Investigate a simulated PHP runtime incident, distinguish the two PHP2Shell CVEs, and choose a defensible response. Every event is fictional and prewritten for training.</p>
+
+      <section class="safety-banner" aria-labelledby="safety-title">
+        <span class="safety-icon" aria-hidden="true">!</span>
+        <div><h2 id="safety-title">Safe by design — no exploitable target</h2><p>This room runs a static training interface only. It includes no PHP runtime, vulnerable service, exploit, shell, upload handler, target input, or command execution. The simulator makes no network requests.</p></div>
+      </section>
+
+      <nav class="room-nav" aria-label="Room sections">
+        <a href="#briefing">01 Briefing</a><a href="#simulator">02 Evidence replay</a><a href="#response">03 Response</a><a href="#knowledge-check">04 Knowledge check</a>
+      </nav>
+
+      <section id="briefing" class="section-block">
+        <div class="section-heading"><span class="section-index">01</span><div><p class="eyebrow-small">MISSION BRIEF</p><h2>What you will learn</h2></div></div>
+        <div class="brief-grid">
+          <article class="brief-card"><span class="card-index">A</span><h3>Before application code</h3><p>Follow the request lifecycle: the PHP runtime can parse multipart input and process upload-progress state before the application starts.</p></article>
+          <article class="brief-card"><span class="card-index">B</span><h3>Two related CVEs</h3><p>Compare CVE-2026-109618 (OOM corruption) with CVE-2026-109619 (stale global state / use-after-free).</p></article>
+          <article class="brief-card"><span class="card-index">C</span><h3>Defensive response</h3><p>Separate a complete runtime update from temporary, incomplete exposure-reduction measures.</p></article>
+        </div>
+        <div class="callout"><strong>Core idea</strong><span>A worker can retain request-owned state after that request's memory is released. A later early-initialization path may encounter stale state before normal request setup resets it.</span></div>
+      </section>
+
+      <section class="section-block lifecycle" aria-labelledby="lifecycle-title">
+        <div class="section-heading"><span class="section-index">02</span><div><p class="eyebrow-small">REQUEST LIFECYCLE</p><h2 id="lifecycle-title">Where the boundary matters</h2></div></div>
+        <ol class="lifecycle-list">
+          <li><span class="life-number">01</span><div><b>HTTP request arrives</b><p>In the scenario, the request is handled by a PHP-capable web stack.</p></div></li>
+          <li><span class="life-number">02</span><div><b>Runtime parses request data</b><p>Multipart parsing and upload-progress handling can occur before userland application code.</p></div></li>
+          <li><span class="life-number">03</span><div><b>Exceptional exit interrupts cleanup</b><p>An out-of-memory condition or another fatal interruption can leave internal state incompletely reset.</p></div></li>
+          <li><span class="life-number">04</span><div><b>Worker state crosses a request boundary</b><p>If the same worker is reused, an early consumer may encounter stale state before normal initialization.</p></div></li>
+        </ol>
+        <p class="micro-note">Illustrative lifecycle only. It does not describe a reproducible request or provide an exploitation recipe.</p>
+      </section>
+
+      <section id="simulator" class="section-block simulator" aria-labelledby="sim-title">
+        <div class="section-heading"><span class="section-index">03</span><div><p class="eyebrow-small">SYNTHETIC EVIDENCE</p><h2 id="sim-title">Replay the incident timeline</h2></div></div>
+        <p class="section-intro">Choose a case to inspect fictional event records. Advancing the replay changes only this page's local display; no server-side state or real memory is involved.</p>
+        <div class="case-picker" role="group" aria-label="Choose a simulated case">
+          <button class="case-button selected" type="button" data-case="cve-2026-109618" aria-pressed="true"><span>CVE-2026-109618</span><small>OOM corruption path</small></button>
+          <button class="case-button" type="button" data-case="cve-2026-109619" aria-pressed="false"><span>CVE-2026-109619</span><small>Stale global state path</small></button>
+        </div>
+        <div class="sim-controls"><button id="start-replay" class="primary-button" type="button">Start evidence replay</button><button id="next-event" class="secondary-button" type="button" disabled>Reveal next event</button><button id="reset-replay" class="text-button" type="button">Reset replay</button></div>
+        <div class="event-panel" aria-labelledby="event-title"><div class="event-panel-head"><div><span class="panel-label">LOCAL SIMULATION</span><h3 id="event-title">Synthetic event record</h3></div><span id="event-counter" class="counter">Not started</span></div><ol id="event-log" class="event-log" aria-live="polite"><li class="empty-state">No events shown. Start the replay to reveal the first fictional record.</li></ol><p id="replay-result" class="replay-result" hidden></p></div>
+        <div class="diagnosis-box"><label for="diagnosis">Your diagnosis</label><select id="diagnosis"><option value="">Choose the best explanation…</option><option value="pre-app">The relevant processing can happen before application code runs.</option><option value="app-bug">The scenario proves that the web application has a SQL injection.</option><option value="safe">No runtime risk exists if the application never calls session_start().</option><option value="unknown">The records are simulated, so no real target has been tested.</option></select><button id="submit-diagnosis" class="secondary-button" type="button">Check diagnosis</button><p id="diagnosis-feedback" class="feedback" aria-live="polite"></p></div>
+      </section>
+
+      <section id="response" class="section-block response-section" aria-labelledby="response-title">
+        <div class="section-heading"><span class="section-index">04</span><div><p class="eyebrow-small">DEFENDER DECISION</p><h2 id="response-title">Choose the response</h2></div></div>
+        <p class="section-intro">Select the action that actually closes the known PHP core vulnerability. The other choices may reduce one path or help with triage, but they are not a complete fix.</p>
+        <div class="response-options" role="group" aria-label="Select a defensive action">
+          <button class="response-option" type="button" data-answer="partial"><span class="option-letter">A</span><span><b>Disable upload progress and restart workers</b><small>Can block demonstrated session paths; other lifecycle paths may remain.</small></span></button>
+          <button class="response-option" type="button" data-answer="full"><span class="option-letter">B</span><span><b>Upgrade to a PHP release containing the fix</b><small>Apply the vendor's patched package and restart the relevant workers/services.</small></span></button>
+          <button class="response-option" type="button" data-answer="partial"><span class="option-letter">C</span><span><b>Block multipart requests at the edge forever</b><small>May disrupt legitimate uploads and is not a substitute for patching the runtime.</small></span></button>
+          <button class="response-option" type="button" data-answer="wrong"><span class="option-letter">D</span><span><b>Patch the application framework only</b><small>The flaw is in PHP core; application-only updates do not repair the runtime.</small></span></button>
+        </div>
+        <div id="response-feedback" class="response-feedback" aria-live="polite"></div>
+        <aside class="release-note"><span class="release-stamp">FIXED RELEASES</span><p>PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35 were listed by the PHP project as fixed releases. For older or vendor-maintained branches, verify the exact package advisory and backport status with the distribution or hosting provider.</p><a href="https://www.php.net/archive/2026.php#2026-10-21-5" target="_blank" rel="noreferrer">Read the PHP release notice</a></aside>
+      </section>
+
+      <section id="knowledge-check" class="section-block quiz-section" aria-labelledby="quiz-title">
+        <div class="section-heading"><span class="section-index">05</span><div><p class="eyebrow-small">KNOWLEDGE CHECK</p><h2 id="quiz-title">Check your understanding</h2></div></div>
+        <p class="section-intro">Five questions. Your score measures only your answers in this training room; it says nothing about a real system's security.</p>
+        <form id="quiz-form" class="quiz-form"></form>
+        <button id="submit-quiz" class="primary-button" type="button">Grade my answers</button>
+        <div id="quiz-results" class="quiz-results" aria-live="polite"></div>
+      </section>
+
+      <section class="completion-panel" aria-labelledby="completion-title">
+        <div class="completion-top"><span class="section-index">06</span><div><p class="eyebrow-small">ROOM COMPLETION</p><h2 id="completion-title">Training flag</h2></div></div>
+        <p>Complete both evidence replays, submit a sound diagnosis, choose the complete mitigation and score at least four of five quiz answers to reveal the local training flag.</p>
+        <div id="completion-state" class="completion-state" aria-live="polite">Room not complete yet. Your progress stays in this browser tab only.</div>
+        <div id="training-flag" class="training-flag" hidden><span>SIMULATED FLAG</span><code>FLAG{PATCH_THE_PHP_RUNTIME}</code><p>This is a training completion token, not a secret or a proof of access to any system.</p></div>
+        <button id="reset-room" class="text-button" type="button">Reset all room progress</button>
+      </section>
+
+      <details class="instructor-notes"><summary>Instructor notes and debrief</summary><div><p><b>Expected takeaway:</b> these are PHP runtime flaws, so clean application code does not by itself remove the affected engine behavior. The two advisories describe different paths to use-after-free / invalid request state and RCE impact. The official PHP release notice is the primary remediation source.</p><p><b>Discussion prompts:</b> Which evidence is simulated? What must be verified on the actual fleet? Which mitigations are temporary, and what operational regressions might they cause? Why does a scanner that only reads one page not establish whether the PHP runtime is patched?</p><p><b>Scope:</b> this room is an awareness and defensive-triage exercise. It is not a vulnerability reproduction, penetration test, or certification.</p></div></details>
+
+      <section class="sources section-block" aria-labelledby="sources-title"><div class="section-heading"><span class="section-index">R</span><div><p class="eyebrow-small">PRIMARY REFERENCES</p><h2 id="sources-title">Read the advisories</h2></div></div><ul><li><a href="https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w" target="_blank" rel="noreferrer">PHP advisory GHSA-w8hw-w9fx-j79w — RCE via OOM corruption (CVE-2026-109618)</a></li><li><a href="https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp" target="_blank" rel="noreferrer">PHP advisory GHSA-6wmf-4rv5-p3rp — RCE via stale global state (CVE-2026-109619)</a></li><li><a href="https://www.php.net/archive/2026.php#2026-10-21-5" target="_blank" rel="noreferrer">PHP security release notice and patched versions</a></li></ul></section>
+
+      <footer class="page-footer"><span>PHP2SHELL ROOM <b>SAFE SIMULATION</b></span><span>NO REAL TARGET · NO EXPLOIT</span></footer>
+    </div>
+  </main>
+</body>
+</html>

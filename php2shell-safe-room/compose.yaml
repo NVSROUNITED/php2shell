@@ -1,0 +1,22 @@
+services:
+  php2shell-room:
+    build: .
+    container_name: php2shell-safe-room
+    ports:
+      - "127.0.0.1:8088:8080"
+    networks:
+      - isolated-room
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=8m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 48
+    mem_limit: 96m
+    cpus: 0.50
+    restart: "no"
+networks:
+  isolated-room:
+    internal: true
